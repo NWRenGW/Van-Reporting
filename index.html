@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Van Inspection</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f4f9;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        h2 { text-align: center; color: #333; }
+        label { font-weight: bold; display: block; margin-top: 15px; margin-bottom: 5px; color: #555; }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        input[type="file"] {
+            background: #eef2f5;
+            padding: 10px;
+        }
+        button {
+            width: 100%;
+            background-color: #0078D4;
+            color: white;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 25px;
+            cursor: pointer;
+        }
+        button:disabled { background-color: #999; }
+        #status { text-align: center; margin-top: 15px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Daily Van Check</h2>
+    <form id="inspectionForm">
+        
+        <label for="vanReg">Van Registration</label>
+        <input type="text" id="vanReg" placeholder="e.g. YP71 JYK" required>
+
+        <label for="mileage">Current Mileage</label>
+        <input type="number" id="mileage" placeholder="e.g. 45000" required>
+
+        <label for="damageReported">Any new damage?</label>
+        <select id="damageReported" required>
+            <option value="No">No</option>
+            <option value="Yes">Yes</option>
+        </select>
+
+        <label for="photo">Take a Photo (If Damaged)</label>
+        <input type="file" id="photo" accept="image/*" capture="environment">
+
+        <button type="submit" id="submitBtn">Submit Report</button>
+        <p id="status"></p>
+
+    </form>
+</div>
+
+<script>
+    // 👇 PASTE YOUR POWER AUTOMATE URL HERE 👇
+    const powerAutomateURL = "https://default267b2c46e98b42ef93ce19c08b7664.4d.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/9e3e85b60f3947da92c42d990ddc422d/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=4gSI0fxRNHaLKvsmfqx8kwBUUOMN5GPkStVnZGmhpGw"; 
+    // 👆 PASTE YOUR POWER AUTOMATE URL HERE 👆
+
+    document.getElementById('inspectionForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const btn = document.getElementById('submitBtn');
+        const status = document.getElementById('status');
+        btn.disabled = true;
+        btn.innerText = "Sending... Please wait";
+        status.innerText = "";
+
+        const fileInput = document.getElementById('photo');
+        let base64String = "";
+        let fileName = "";
+
+        // Function to convert photo to Base64 text so Power Automate can read it
+        const getBase64 = (file) => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result.split(',')[1]); 
+            reader.onerror = error => reject(error);
+        });
+
+        if (fileInput.files.length > 0) {
+            base64String = await getBase64(fileInput.files[0]);
+            fileName = fileInput.files[0].name;
+        }
+
+        const payload = {
+            vanReg: document.getElementById('vanReg').value,
+            mileage: document.getElementById('mileage').value,
+            damageReported: document.getElementById('damageReported').value,
+            photoBase64: base64String,
+            photoName: fileName
+        };
+
+        try {
+            const response = await fetch(powerAutomateURL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                status.style.color = "green";
+                status.innerText = "✅ Report sent successfully!";
+                document.getElementById('inspectionForm').reset();
+            } else {
+                throw new Error("Failed to send");
+            }
+        } catch (error) {
+            status.style.color = "red";
+            status.innerText = "❌ Error sending report. Please try again.";
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "Submit Report";
+        }
+    });
+</script>
+
+</body>
+</html>
