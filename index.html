@@ -11,26 +11,27 @@
         h2 { text-align: center; margin-top: 0; color: var(--primary); font-size: 24px; margin-bottom: 25px; }
         .input-group { margin-bottom: 20px; }
         label { font-weight: 600; display: block; margin-bottom: 8px; font-size: 14px; color: #4b5563; }
-        input, select { width: 100%; padding: 14px; border: 1.5px solid #e5e7eb; border-radius: 10px; box-sizing: border-box; font-size: 16px; transition: border-color 0.2s; background-color: #f9fafb; }
+        input, select { width: 100%; padding: 14px; border: 1.5px solid #e5e7eb; border-radius: 10px; box-sizing: border-box; font-size: 16px; background-color: #f9fafb; }
         input:focus, select:focus { outline: none; border-color: var(--primary); background-color: white; }
-        input[type="file"] { padding: 10px; background: white; }
-        .btn { width: 100%; background-color: var(--primary); color: white; padding: 16px; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; margin-top: 10px; cursor: pointer; box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2); transition: background-color 0.2s; }
-        .btn:disabled { background-color: #9ca3af; box-shadow: none; cursor: not-allowed; }
+        .btn { width: 100%; background-color: var(--primary); color: white; padding: 16px; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; }
+        .btn:disabled { background-color: #9ca3af; cursor: not-allowed; }
         #status { text-align: center; margin-top: 20px; font-weight: 600; font-size: 15px; }
-        .loading { text-align: center; font-size: 14px; color: #6b7280; font-style: italic; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>Van Reporting</h2>
+    <h2>Daily Van Check</h2>
     <form id="inspectionForm">
         
         <div class="input-group">
             <label for="vanReg">Select Van</label>
-            <select id="vanReg" required>
-                <option value="">Loading fleet list...</option>
-            </select>
+            <select id="vanReg" required><option value="">Loading fleet list...</option></select>
+        </div>
+
+        <div class="input-group">
+            <label for="driverName">Driver Name</label>
+            <input type="text" id="driverName" placeholder="e.g. Jane Doe" required>
         </div>
 
         <div class="input-group">
@@ -47,24 +48,23 @@
         </div>
 
         <div class="input-group" id="photoGroup">
-            <label for="photo">Upload Photo (Required if damaged)</label>
+            <label for="photo">Upload Photo (If damaged)</label>
             <input type="file" id="photo" accept="image/*" capture="environment">
         </div>
 
         <button type="submit" class="btn" id="submitBtn">Submit Report</button>
         <p id="status"></p>
-
     </form>
 </div>
 
 <script>
-    // 👇 1. PASTE YOUR NEW "GET" URL HERE (To load the dropdown) 👇
+    // 1. DROPDOWN URL (Courier Flow)
     const getVansURL = "https://default267b2c46e98b42ef93ce19c08b7664.4d.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/5a4f7fb2b4604d3d8a8ce97b69b0348b/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=lXWJit-Xl4zeEnTIq0jKkD_IMdVsUzQLrXsejEsIVZ8"; 
     
-    // 👇 2. PASTE YOUR ORIGINAL "POST" CATCHER URL HERE (To save the data) 👇
+    // 2. CATCHER URL (Data submission flow)
     const submitReportURL = "https://default267b2c46e98b42ef93ce19c08b7664.4d.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/9e3e85b60f3947da92c42d990ddc422d/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=4gSI0fxRNHaLKvsmfqx8kwBUUOMN5GPkStVnZGmhpGw"; 
 
-    // Fetch the van list when page loads
+    // Load van list on startup
     window.onload = async function() {
         const vanSelect = document.getElementById('vanReg');
         try {
@@ -72,38 +72,30 @@
             const vans = await response.json();
             vanSelect.innerHTML = '<option value="">-- Select a Van --</option>';
             vans.forEach(van => {
-                // If your Select step output looks like ["YP71JYK", "YR23VEL"], use 'van'
-                // If it looks like [{"VanReg": "YP71JYK"}], you'll need 'van.VanReg'
                 let opt = document.createElement('option');
-                opt.value = van; 
-                opt.innerHTML = van;
+                opt.value = van; opt.innerHTML = van;
                 vanSelect.appendChild(opt);
             });
         } catch (error) {
-            vanSelect.innerHTML = '<option value="">Error loading vans. Please type manually.</option>';
-            // Fallback to text input if flow fails
+            vanSelect.innerHTML = '<option value="">Error. Please type manually.</option>';
             const input = document.createElement('input');
-            input.type = 'text'; input.id = 'vanReg'; input.required = true; input.placeholder = "Enter Van Reg";
+            input.type = 'text'; input.id = 'vanReg'; input.required = true;
             vanSelect.parentNode.replaceChild(input, vanSelect);
         }
     };
 
+    // Handle form submission
     document.getElementById('inspectionForm').addEventListener('submit', async function(e) {
         e.preventDefault();
-        
         const btn = document.getElementById('submitBtn');
         const status = document.getElementById('status');
-        btn.disabled = true;
-        btn.innerText = "Uploading Report...";
-        status.innerText = "";
+        btn.disabled = true; btn.innerText = "Uploading..."; status.innerText = "";
 
         const fileInput = document.getElementById('photo');
-        let base64String = "";
-        let fileName = "";
+        let base64String = "", fileName = "";
 
         const getBase64 = (file) => new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
+            const reader = new FileReader(); reader.readAsDataURL(file);
             reader.onload = () => resolve(reader.result.split(',')[1]); 
             reader.onerror = error => reject(error);
         });
@@ -115,6 +107,7 @@
 
         const payload = {
             vanReg: document.getElementById('vanReg').value,
+            driverName: document.getElementById('driverName').value,
             mileage: document.getElementById('mileage').value,
             damageReported: document.getElementById('damageReported').value,
             photoBase64: base64String,
@@ -123,26 +116,18 @@
 
         try {
             const response = await fetch(submitReportURL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
             });
-
             if (response.ok) {
-                status.style.color = "#10b981"; // Green
-                status.innerText = "✅ Report submitted successfully!";
+                status.style.color = "#10b981"; status.innerText = "✅ Report submitted!";
                 document.getElementById('inspectionForm').reset();
-            } else { throw new Error("Failed"); }
+            } else throw new Error("Failed");
         } catch (error) {
-            status.style.color = "#ef4444"; // Red
-            status.innerText = "❌ Error sending report. Try again.";
+            status.style.color = "#ef4444"; status.innerText = "❌ Error sending report.";
         } finally {
-            btn.disabled = false;
-            btn.innerText = "Submit Report";
+            btn.disabled = false; btn.innerText = "Submit Report";
         }
     });
 </script>
-
 </body>
 </html>
-
