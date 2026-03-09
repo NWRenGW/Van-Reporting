@@ -11,11 +11,14 @@
         h2 { text-align: center; margin-top: 0; color: var(--primary); font-size: 24px; margin-bottom: 25px; }
         .input-group { margin-bottom: 20px; }
         label { font-weight: 600; display: block; margin-bottom: 8px; font-size: 14px; color: #4b5563; }
-        input, select { width: 100%; padding: 14px; border: 1.5px solid #e5e7eb; border-radius: 10px; box-sizing: border-box; font-size: 16px; background-color: #f9fafb; }
-        input:focus, select:focus { outline: none; border-color: var(--primary); background-color: white; }
+        input, select, textarea { width: 100%; padding: 14px; border: 1.5px solid #e5e7eb; border-radius: 10px; box-sizing: border-box; font-size: 16px; background-color: #f9fafb; font-family: inherit; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); background-color: white; }
         .btn { width: 100%; background-color: var(--primary); color: white; padding: 16px; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; }
         .btn:disabled { background-color: #9ca3af; cursor: not-allowed; }
         #status { text-align: center; margin-top: 20px; font-weight: 600; font-size: 15px; }
+        
+        /* Hides the description box by default */
+        #descGroup { display: none; } 
     </style>
 </head>
 <body>
@@ -47,6 +50,11 @@
             </select>
         </div>
 
+        <div class="input-group" id="descGroup">
+            <label for="damageDescription">Describe the Damage</label>
+            <textarea id="damageDescription" rows="3" placeholder="What is damaged?"></textarea>
+        </div>
+
         <div class="input-group" id="photoGroup">
             <label for="photo">Upload Photo (If damaged)</label>
             <input type="file" id="photo" accept="image/*" capture="environment">
@@ -64,19 +72,38 @@
     // 2. CATCHER URL (Data submission flow)
     const submitReportURL = "https://default267b2c46e98b42ef93ce19c08b7664.4d.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/9e3e85b60f3947da92c42d990ddc422d/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=4gSI0fxRNHaLKvsmfqx8kwBUUOMN5GPkStVnZGmhpGw"; 
 
+    // Show/Hide description box based on dropdown
+    document.getElementById('damageReported').addEventListener('change', function() {
+        const descGroup = document.getElementById('descGroup');
+        if (this.value === 'Yes') {
+            descGroup.style.display = 'block';
+        } else {
+            descGroup.style.display = 'none';
+            document.getElementById('damageDescription').value = ''; // Clear text if they change to No
+        }
+    });
+
     // Load van list on startup
     window.onload = async function() {
         const vanSelect = document.getElementById('vanReg');
         try {
             const response = await fetch(getVansURL);
+            if (!response.ok) throw new Error("Flow failed to respond");
+            
             const vans = await response.json();
             vanSelect.innerHTML = '<option value="">-- Select a Van --</option>';
+            
             vans.forEach(van => {
-                let opt = document.createElement('option');
-                opt.value = van; opt.innerHTML = van;
-                vanSelect.appendChild(opt);
+                // This fix ensures it works whether Power Automate sends text or objects
+                let vanText = typeof van === 'object' ? Object.values(van)[0] : van;
+                if(vanText) {
+                    let opt = document.createElement('option');
+                    opt.value = vanText; opt.innerHTML = vanText;
+                    vanSelect.appendChild(opt);
+                }
             });
         } catch (error) {
+            console.error(error); // Logs exact error for debugging
             vanSelect.innerHTML = '<option value="">Error. Please type manually.</option>';
             const input = document.createElement('input');
             input.type = 'text'; input.id = 'vanReg'; input.required = true;
@@ -110,6 +137,7 @@
             driverName: document.getElementById('driverName').value,
             mileage: document.getElementById('mileage').value,
             damageReported: document.getElementById('damageReported').value,
+            damageDescription: document.getElementById('damageDescription').value, // NEW Field added
             photoBase64: base64String,
             photoName: fileName
         };
@@ -121,6 +149,7 @@
             if (response.ok) {
                 status.style.color = "#10b981"; status.innerText = "✅ Report submitted!";
                 document.getElementById('inspectionForm').reset();
+                document.getElementById('descGroup').style.display = 'none'; // Hide box again
             } else throw new Error("Failed");
         } catch (error) {
             status.style.color = "#ef4444"; status.innerText = "❌ Error sending report.";
