@@ -95,7 +95,7 @@ font-weight:600;
 font-size:15px;
 }
 
-#descGroup{display:none;}
+#descGroup, #serviceDescGroup {display:none;} /* Hidden by default */
 
 #photoPreviewList{
 display:flex;
@@ -137,6 +137,19 @@ border:2px solid #e5e7eb;
 <div class="input-group">
 <label for="mileage">Current Mileage</label>
 <input type="number" id="mileage" placeholder="e.g. 45000" required>
+</div>
+
+<div class="input-group">
+<label for="serviceIndicator">Service/Warning Lights Illuminated?</label>
+<select id="serviceIndicator" required onchange="toggleServiceBox(this.value)">
+<option value="No">No - Dash is clear</option>
+<option value="Yes">Yes - Service/Warning Light On</option>
+</select>
+</div>
+
+<div class="input-group" id="serviceDescGroup">
+<label for="serviceDescription">Which lights are displayed?</label>
+<textarea id="serviceDescription" rows="2" placeholder="e.g. Engine management, Brake wear, Oil light"></textarea>
 </div>
 
 <div class="input-group">
@@ -193,82 +206,65 @@ document.getElementById("cameraInput").addEventListener("change",handlePhoto);
 document.getElementById("galleryInput").addEventListener("change",handlePhoto);
 
 async function handlePhoto(e){
-
 const file=e.target.files[0];
 if(!file) return;
-
 const base64=await getBase64(file);
-
 customPhotosArray.push({
 photoName:file.name,
 photoBase64:base64
 });
-
 const preview=document.getElementById("photoPreviewList");
-
 const img=document.createElement("img");
 img.src="data:image/jpeg;base64,"+base64;
 img.className="thumbnail";
-
 preview.appendChild(img);
-
 e.target.value='';
 }
 
+// Service Light Toggle Logic
+function toggleServiceBox(val){
+const srvGroup = document.getElementById("serviceDescGroup");
+if(val === "Yes"){
+srvGroup.style.display = "block";
+} else {
+srvGroup.style.display = "none";
+document.getElementById("serviceDescription").value = "";
+}
+}
+
+// Damage Toggle Logic
 function toggleDamageBox(val){
-
 const descGroup=document.getElementById("descGroup");
-
 if(val==="Yes"){
 descGroup.style.display="block";
 }else{
 descGroup.style.display="none";
 document.getElementById("damageDescription").value="";
 }
-
 }
 
 window.onload=async function(){
-
 const vanSelect=document.getElementById("vanReg");
-
 try{
-
 const response=await fetch(getVansURL);
-
 if(!response.ok) throw new Error();
-
 const vans=await response.json();
-
 vanSelect.innerHTML='<option value="">-- Select a Van --</option>';
-
 vans.forEach(van=>{
-
 let vanText=typeof van==="object"?Object.values(van)[0]:van;
-
 if(vanText){
-
 let opt=document.createElement("option");
-
 opt.value=vanText;
 opt.innerHTML=vanText;
-
 vanSelect.appendChild(opt);
-
 }
-
 });
-
-}catch{
-
+} catch {
 vanSelect.innerHTML='<option value="">Error loading list.</option>';
-
 }
-
 };
 
 document.getElementById("inspectionForm").addEventListener("submit",async function(e){
-
 e.preventDefault();
 
 const btn=document.getElementById("submitBtn");
@@ -278,19 +274,21 @@ btn.disabled=true;
 btn.innerText="Uploading...";
 status.innerText="";
 
-const payload={
+const today = new Date().toISOString().split('T')[0];
 
+const payload={
 vanReg:document.getElementById("vanReg").value,
 driverName:document.getElementById("driverName").value,
 mileage:document.getElementById("mileage").value,
+serviceIndicator:document.getElementById("serviceIndicator").value,
+serviceDescription:document.getElementById("serviceDescription").value, // NEW
 damageReported:document.getElementById("damageReported").value,
 damageDescription:document.getElementById("damageDescription").value,
+reportDate: today,
 photos:customPhotosArray
-
 };
 
 try{
-
 const response=await fetch(submitReportURL,{
 method:"POST",
 headers:{'Content-Type':'application/json'},
@@ -298,38 +296,25 @@ body:JSON.stringify(payload)
 });
 
 if(response.ok){
-
 status.style.color="#10b981";
 status.innerText="✅ Report submitted!";
-
 document.getElementById("inspectionForm").reset();
-
 document.getElementById("descGroup").style.display="none";
-
+document.getElementById("serviceDescGroup").style.display="none";
 customPhotosArray=[];
 document.getElementById("photoPreviewList").innerHTML="";
-
 }else{
-
 throw new Error();
-
 }
-
 }catch{
-
 status.style.color="#ef4444";
 status.innerText="❌ Error sending report.";
-
 }
 
 btn.disabled=false;
 btn.innerText="Submit Report";
-
 });
 
 </script>
-
 </body>
 </html>
-```
-
