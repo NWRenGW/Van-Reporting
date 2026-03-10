@@ -16,8 +16,6 @@
         .btn { width: 100%; background-color: var(--primary); color: white; padding: 16px; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; }
         .btn:disabled { background-color: #9ca3af; cursor: not-allowed; }
         #status { text-align: center; margin-top: 20px; font-weight: 600; font-size: 15px; }
-        
-        /* Hides the description box by default */
         #descGroup { display: none; } 
     </style>
 </head>
@@ -52,12 +50,12 @@
 
         <div class="input-group" id="descGroup">
             <label for="damageDescription">Describe the Damage</label>
-            <textarea id="damageDescription" rows="3" placeholder="What is damaged? (e.g. Dent on rear bumper)"></textarea>
+            <textarea id="damageDescription" rows="3" placeholder="What is damaged?"></textarea>
         </div>
 
         <div class="input-group" id="photoGroup">
-            <label for="photo">Upload Photo (If damaged)</label>
-            <input type="file" id="photo" accept="image/*" capture="environment">
+            <label for="photo">Upload Photos (Select multiple if needed)</label>
+            <input type="file" id="photo" accept="image/*" multiple>
         </div>
 
         <button type="submit" class="btn" id="submitBtn">Submit Report</button>
@@ -66,33 +64,29 @@
 </div>
 
 <script>
-    // 1. DROPDOWN URL (Courier Flow)
+    // 1. DROPDOWN URL
     const getVansURL = "https://default267b2c46e98b42ef93ce19c08b7664.4d.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/5a4f7fb2b4604d3d8a8ce97b69b0348b/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=lXWJit-Xl4zeEnTIq0jKkD_IMdVsUzQLrXsejEsIVZ8"; 
     
-    // 2. CATCHER URL (Data submission flow)
+    // 2. CATCHER URL
     const submitReportURL = "https://default267b2c46e98b42ef93ce19c08b7664.4d.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/9e3e85b60f3947da92c42d990ddc422d/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=4gSI0fxRNHaLKvsmfqx8kwBUUOMN5GPkStVnZGmhpGw"; 
 
-    // Function to instantly show/hide the description box
     function toggleDamageBox(selectedValue) {
         const descGroup = document.getElementById('descGroup');
         if (selectedValue === 'Yes') {
             descGroup.style.display = 'block';
         } else {
             descGroup.style.display = 'none';
-            document.getElementById('damageDescription').value = ''; // Clears text if they switch back to No
+            document.getElementById('damageDescription').value = ''; 
         }
     }
 
-    // Load van list on startup
     window.onload = async function() {
         const vanSelect = document.getElementById('vanReg');
         try {
             const response = await fetch(getVansURL);
             if (!response.ok) throw new Error("Flow failed to respond");
-            
             const vans = await response.json();
             vanSelect.innerHTML = '<option value="">-- Select a Van --</option>';
-            
             vans.forEach(van => {
                 let vanText = typeof van === 'object' ? Object.values(van)[0] : van;
                 if(vanText) {
@@ -102,15 +96,13 @@
                 }
             });
         } catch (error) {
-            console.error("Dropdown error:", error);
-            vanSelect.innerHTML = '<option value="">Error loading list. Please type manually.</option>';
+            vanSelect.innerHTML = '<option value="">Error loading list.</option>';
             const input = document.createElement('input');
-            input.type = 'text'; input.id = 'vanReg'; input.required = true; input.placeholder = "Enter Van Reg";
+            input.type = 'text'; input.id = 'vanReg'; input.required = true;
             vanSelect.parentNode.replaceChild(input, vanSelect);
         }
     };
 
-    // Handle form submission
     document.getElementById('inspectionForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         const btn = document.getElementById('submitBtn');
@@ -118,17 +110,22 @@
         btn.disabled = true; btn.innerText = "Uploading..."; status.innerText = "";
 
         const fileInput = document.getElementById('photo');
-        let base64String = "", fileName = "";
+        let photosArray = [];
 
+        // Function to convert file to base64
         const getBase64 = (file) => new Promise((resolve, reject) => {
             const reader = new FileReader(); reader.readAsDataURL(file);
             reader.onload = () => resolve(reader.result.split(',')[1]); 
             reader.onerror = error => reject(error);
         });
 
-        if (fileInput.files.length > 0) {
-            base64String = await getBase64(fileInput.files[0]);
-            fileName = fileInput.files[0].name;
+        // Loop through all selected files and package them
+        for (let i = 0; i < fileInput.files.length; i++) {
+            let base64 = await getBase64(fileInput.files[i]);
+            photosArray.push({
+                photoName: fileInput.files[i].name,
+                photoBase64: base64
+            });
         }
 
         const payload = {
@@ -137,8 +134,7 @@
             mileage: document.getElementById('mileage').value,
             damageReported: document.getElementById('damageReported').value,
             damageDescription: document.getElementById('damageDescription').value,
-            photoBase64: base64String,
-            photoName: fileName
+            photos: photosArray // Send the whole array of photos!
         };
 
         try {
@@ -148,7 +144,7 @@
             if (response.ok) {
                 status.style.color = "#10b981"; status.innerText = "✅ Report submitted!";
                 document.getElementById('inspectionForm').reset();
-                document.getElementById('descGroup').style.display = 'none'; // Re-hide the box
+                document.getElementById('descGroup').style.display = 'none'; 
             } else throw new Error("Failed");
         } catch (error) {
             status.style.color = "#ef4444"; status.innerText = "❌ Error sending report.";
