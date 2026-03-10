@@ -66,6 +66,14 @@ border-color:var(--primary);
 background:white;
 }
 
+/* Locked input styling for the Van Reg */
+.locked-input { 
+background-color: #e5e7eb !important; 
+color: #4b5563; 
+font-weight: bold; 
+cursor: not-allowed; 
+}
+
 .btn{
 width:100%;
 background:var(--primary);
@@ -95,7 +103,7 @@ font-weight:600;
 font-size:15px;
 }
 
-#descGroup, #serviceDescGroup {display:none;} /* Hidden by default */
+#descGroup, #serviceDescGroup {display:none;}
 
 #photoPreviewList{
 display:flex;
@@ -123,10 +131,8 @@ border:2px solid #e5e7eb;
 <form id="inspectionForm">
 
 <div class="input-group">
-<label for="vanReg">Select Van</label>
-<select id="vanReg" required>
-<option value="">Loading fleet list...</option>
-</select>
+<label for="vanReg">Van Registration</label>
+<input type="text" id="vanReg" class="locked-input" readonly required placeholder="Scan QR to load...">
 </div>
 
 <div class="input-group">
@@ -189,9 +195,27 @@ border:2px solid #e5e7eb;
 
 <script>
 
-const getVansURL = "https://default267b2c46e98b42ef93ce19c08b7664.4d.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/5a4f7fb2b4604d3d8a8ce97b69b0348b/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=lXWJit-Xl4zeEnTIq0jKkD_IMdVsUzQLrXsejEsIVZ8";
-
+// Catcher URL for Power Automate
 const submitReportURL = "https://default267b2c46e98b42ef93ce19c08b7664.4d.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/9e3e85b60f3947da92c42d990ddc422d/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=4gSI0fxRNHaLKvsmfqx8kwBUUOMN5GPkStVnZGmhpGw";
+
+// --- Read URL Parameter on Load ---
+window.onload = function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const vanParam = urlParams.get('van');
+    const vanInput = document.getElementById('vanReg');
+    const submitBtn = document.getElementById('submitBtn');
+
+    if (vanParam) {
+        // If a van is found in the link, lock it into the box
+        vanInput.value = decodeURIComponent(vanParam);
+    } else {
+        // If they just go to the plain website without scanning a QR code
+        vanInput.value = "INVALID LINK";
+        submitBtn.disabled = true;
+        submitBtn.innerText = "Please scan a Van QR Code";
+        alert("Error: No van selected. Please scan the QR code located inside the van to use this form.");
+    }
+};
 
 let customPhotosArray = [];
 
@@ -208,20 +232,24 @@ document.getElementById("galleryInput").addEventListener("change",handlePhoto);
 async function handlePhoto(e){
 const file=e.target.files[0];
 if(!file) return;
+
 const base64=await getBase64(file);
+
 customPhotosArray.push({
 photoName:file.name,
 photoBase64:base64
 });
+
 const preview=document.getElementById("photoPreviewList");
 const img=document.createElement("img");
 img.src="data:image/jpeg;base64,"+base64;
 img.className="thumbnail";
+
 preview.appendChild(img);
+
 e.target.value='';
 }
 
-// Service Light Toggle Logic
 function toggleServiceBox(val){
 const srvGroup = document.getElementById("serviceDescGroup");
 if(val === "Yes"){
@@ -232,7 +260,6 @@ document.getElementById("serviceDescription").value = "";
 }
 }
 
-// Damage Toggle Logic
 function toggleDamageBox(val){
 const descGroup=document.getElementById("descGroup");
 if(val==="Yes"){
@@ -242,27 +269,6 @@ descGroup.style.display="none";
 document.getElementById("damageDescription").value="";
 }
 }
-
-window.onload=async function(){
-const vanSelect=document.getElementById("vanReg");
-try{
-const response=await fetch(getVansURL);
-if(!response.ok) throw new Error();
-const vans=await response.json();
-vanSelect.innerHTML='<option value="">-- Select a Van --</option>';
-vans.forEach(van=>{
-let vanText=typeof van==="object"?Object.values(van)[0]:van;
-if(vanText){
-let opt=document.createElement("option");
-opt.value=vanText;
-opt.innerHTML=vanText;
-vanSelect.appendChild(opt);
-}
-});
-} catch {
-vanSelect.innerHTML='<option value="">Error loading list.</option>';
-}
-};
 
 document.getElementById("inspectionForm").addEventListener("submit",async function(e){
 e.preventDefault();
@@ -274,6 +280,7 @@ btn.disabled=true;
 btn.innerText="Uploading...";
 status.innerText="";
 
+// Get current date in YYYY-MM-DD format
 const today = new Date().toISOString().split('T')[0];
 
 const payload={
@@ -281,7 +288,7 @@ vanReg:document.getElementById("vanReg").value,
 driverName:document.getElementById("driverName").value,
 mileage:document.getElementById("mileage").value,
 serviceIndicator:document.getElementById("serviceIndicator").value,
-serviceDescription:document.getElementById("serviceDescription").value, // NEW
+serviceDescription:document.getElementById("serviceDescription").value,
 damageReported:document.getElementById("damageReported").value,
 damageDescription:document.getElementById("damageDescription").value,
 reportDate: today,
@@ -298,11 +305,20 @@ body:JSON.stringify(payload)
 if(response.ok){
 status.style.color="#10b981";
 status.innerText="✅ Report submitted!";
-document.getElementById("inspectionForm").reset();
+
+// Reset form but keep Van Reg locked
+document.getElementById("driverName").value = "";
+document.getElementById("mileage").value = "";
+document.getElementById("serviceIndicator").value = "No";
+document.getElementById("serviceDescription").value = "";
+document.getElementById("damageReported").value = "No";
+document.getElementById("damageDescription").value = "";
 document.getElementById("descGroup").style.display="none";
 document.getElementById("serviceDescGroup").style.display="none";
+
 customPhotosArray=[];
 document.getElementById("photoPreviewList").innerHTML="";
+
 }else{
 throw new Error();
 }
