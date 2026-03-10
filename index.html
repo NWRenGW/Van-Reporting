@@ -1,190 +1,335 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fleet Inspection Form</title>
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fleet Inspection Form</title>
+
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-    <style>
-        :root { --primary: #2563eb; --bg: #f3f4f6; --text: #1f2937; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background-color: var(--bg); color: var(--text); padding: 20px; margin: 0; display: flex; justify-content: center; }
-        .card { background: white; padding: 30px 20px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); width: 100%; max-width: 400px; }
-        h2 { text-align: center; margin-top: 0; color: var(--primary); font-size: 24px; margin-bottom: 25px; }
-        .input-group { margin-bottom: 20px; }
-        label { font-weight: 600; display: block; margin-bottom: 8px; font-size: 14px; color: #4b5563; }
-        input, select, textarea { width: 100%; padding: 14px; border: 1.5px solid #e5e7eb; border-radius: 10px; box-sizing: border-box; font-size: 16px; background-color: #f9fafb; font-family: inherit; }
-        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); background-color: white; }
-        .btn { width: 100%; background-color: var(--primary); color: white; padding: 16px; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; }
-        .btn-secondary { background-color: #6b7280; margin-bottom: 10px; } /* Added secondary button style */
-        .btn:disabled { background-color: #9ca3af; cursor: not-allowed; }
-        #status { text-align: center; margin-top: 20px; font-weight: 600; font-size: 15px; }
-        #descGroup { display: none; } 
-        /* Added Thumbnail Styles */
-        #photoPreviewList { display: flex; flex-wrap: wrap; gap: 10px; }
-        .thumbnail { width: 65px; height: 65px; object-fit: cover; border-radius: 8px; border: 2px solid #e5e7eb; }
-    </style>
+
+<style>
+:root { --primary:#2563eb; --bg:#f3f4f6; --text:#1f2937; }
+
+body{
+font-family:'Segoe UI',system-ui,sans-serif;
+background:var(--bg);
+color:var(--text);
+padding:20px;
+margin:0;
+display:flex;
+justify-content:center;
+}
+
+.card{
+background:white;
+padding:30px 20px;
+border-radius:16px;
+box-shadow:0 10px 25px rgba(0,0,0,0.05);
+width:100%;
+max-width:400px;
+}
+
+h2{
+text-align:center;
+margin-top:0;
+color:var(--primary);
+font-size:24px;
+margin-bottom:25px;
+}
+
+.input-group{margin-bottom:20px;}
+
+label{
+font-weight:600;
+display:block;
+margin-bottom:8px;
+font-size:14px;
+color:#4b5563;
+}
+
+input,select,textarea{
+width:100%;
+padding:14px;
+border:1.5px solid #e5e7eb;
+border-radius:10px;
+box-sizing:border-box;
+font-size:16px;
+background:#f9fafb;
+font-family:inherit;
+}
+
+input:focus,select:focus,textarea:focus{
+outline:none;
+border-color:var(--primary);
+background:white;
+}
+
+.btn{
+width:100%;
+background:var(--primary);
+color:white;
+padding:16px;
+border:none;
+border-radius:10px;
+font-size:16px;
+font-weight:700;
+cursor:pointer;
+margin-bottom:10px;
+}
+
+.btn-secondary{
+background:#6b7280;
+}
+
+.btn:disabled{
+background:#9ca3af;
+cursor:not-allowed;
+}
+
+#status{
+text-align:center;
+margin-top:20px;
+font-weight:600;
+font-size:15px;
+}
+
+#descGroup{display:none;}
+
+#photoPreviewList{
+display:flex;
+flex-wrap:wrap;
+gap:10px;
+margin-top:10px;
+}
+
+.thumbnail{
+width:65px;
+height:65px;
+object-fit:cover;
+border-radius:8px;
+border:2px solid #e5e7eb;
+}
+</style>
 </head>
+
 <body>
 
 <div class="card">
-    <h2>Van Inspection/Reporting</h2>
-    <form id="inspectionForm">
-        
-        <div class="input-group">
-            <label for="vanReg">Select Van</label>
-            <select id="vanReg" required><option value="">Loading fleet list...</option></select>
-        </div>
 
-        <div class="input-group">
-            <label for="driverName">Driver Name</label>
-            <input type="text" id="driverName" placeholder="e.g. Jane Doe" required>
-        </div>
+<h2>Van Inspection / Reporting</h2>
 
-        <div class="input-group">
-            <label for="mileage">Current Mileage</label>
-            <input type="number" id="mileage" placeholder="e.g. 45000" required>
-        </div>
+<form id="inspectionForm">
 
-        <div class="input-group">
-            <label for="damageReported">Vehicle Damages</label>
-            <select id="damageReported" required onchange="toggleDamageBox(this.value)">
-                <option value="No">No - Vehicle is fine</option>
-                <option value="Yes">Yes - Reporting damage</option>
-            </select>
-        </div>
+<div class="input-group">
+<label for="vanReg">Select Van</label>
+<select id="vanReg" required>
+<option value="">Loading fleet list...</option>
+</select>
+</div>
 
-        <div class="input-group" id="descGroup">
-            <label for="damageDescription">Describe the Damage</label>
-            <textarea id="damageDescription" rows="3" placeholder="What is damaged?"></textarea>
-        </div>
+<div class="input-group">
+<label for="driverName">Driver Name</label>
+<input type="text" id="driverName" placeholder="e.g. Jane Doe" required>
+</div>
 
-        <div class="input-group" id="photoGroup">
-            <label>Upload/Take Photos (If damaged)</label>
-            
-            <input type="file" id="photoInput" accept="image/*" style="display: none;">
-            
-            <button type="button" class="btn btn-secondary" onclick="document.getElementById('photoInput').click()">📸 Take/Add Photo</button>
-            
-            <div id="photoPreviewList"></div>
-        </div>
+<div class="input-group">
+<label for="mileage">Current Mileage</label>
+<input type="number" id="mileage" placeholder="e.g. 45000" required>
+</div>
 
-        <button type="submit" class="btn" id="submitBtn">Submit Report</button>
-        <p id="status"></p>
-    </form>
+<div class="input-group">
+<label for="damageReported">Vehicle Damages</label>
+<select id="damageReported" required onchange="toggleDamageBox(this.value)">
+<option value="No">No - Vehicle is fine</option>
+<option value="Yes">Yes - Reporting damage</option>
+</select>
+</div>
+
+<div class="input-group" id="descGroup">
+<label for="damageDescription">Describe the Damage</label>
+<textarea id="damageDescription" rows="3" placeholder="What is damaged?"></textarea>
+</div>
+
+<div class="input-group">
+
+<label>Upload / Take Photos (If damaged)</label>
+
+<input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none">
+<input type="file" id="galleryInput" accept="image/*" style="display:none">
+
+<button type="button" class="btn btn-secondary" onclick="document.getElementById('cameraInput').click()">📸 Take Photo</button>
+
+<button type="button" class="btn btn-secondary" onclick="document.getElementById('galleryInput').click()">🖼 Choose From Gallery</button>
+
+<div id="photoPreviewList"></div>
+
+</div>
+
+<button type="submit" class="btn" id="submitBtn">Submit Report</button>
+
+<p id="status"></p>
+
+</form>
 </div>
 
 <script>
-    // 1. DROPDOWN URL
-    const getVansURL = "https://default267b2c46e98b42ef93ce19c08b7664.4d.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/5a4f7fb2b4604d3d8a8ce97b69b0348b/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=lXWJit-Xl4zeEnTIq0jKkD_IMdVsUzQLrXsejEsIVZ8"; 
-    
-    // 2. CATCHER URL
-    const submitReportURL = "https://default267b2c46e98b42ef93ce19c08b7664.4d.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/9e3e85b60f3947da92c42d990ddc422d/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=4gSI0fxRNHaLKvsmfqx8kwBUUOMN5GPkStVnZGmhpGw"; 
 
-    // Global array to hold the camera/gallery shots
-    let customPhotosArray = [];
+const getVansURL = "https://default267b2c46e98b42ef93ce19c08b7664.4d.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/5a4f7fb2b4604d3d8a8ce97b69b0348b/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=lXWJit-Xl4zeEnTIq0jKkD_IMdVsUzQLrXsejEsIVZ8";
 
-    // Base64 Converter moved outside the submit function
-    const getBase64 = (file) => new Promise((resolve, reject) => {
-        const reader = new FileReader(); reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result.split(',')[1]); 
-        reader.onerror = error => reject(error);
-    });
+const submitReportURL = "https://default267b2c46e98b42ef93ce19c08b7664.4d.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/9e3e85b60f3947da92c42d990ddc422d/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=4gSI0fxRNHaLKvsmfqx8kwBUUOMN5GPkStVnZGmhpGw";
 
-    // Handle the new photo button clicks
-    document.getElementById('photoInput').addEventListener('change', async function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
+let customPhotosArray = [];
 
-        // Convert the photo immediately
-        const base64 = await getBase64(file);
-        
-        // Add to our payload array
-        customPhotosArray.push({
-            photoName: file.name,
-            photoBase64: base64
-        });
+const getBase64 = (file) => new Promise((resolve,reject)=>{
+const reader=new FileReader();
+reader.readAsDataURL(file);
+reader.onload=()=>resolve(reader.result.split(',')[1]);
+reader.onerror=error=>reject(error);
+});
 
-        // Show a little thumbnail preview
-        const previewDiv = document.getElementById('photoPreviewList');
-        const img = document.createElement('img');
-        img.src = "data:image/jpeg;base64," + base64;
-        img.className = "thumbnail";
-        previewDiv.appendChild(img);
+document.getElementById("cameraInput").addEventListener("change",handlePhoto);
+document.getElementById("galleryInput").addEventListener("change",handlePhoto);
 
-        // Reset the input so they can click it again for the next photo!
-        this.value = '';
-    });
+async function handlePhoto(e){
 
-    function toggleDamageBox(selectedValue) {
-        const descGroup = document.getElementById('descGroup');
-        if (selectedValue === 'Yes') {
-            descGroup.style.display = 'block';
-        } else {
-            descGroup.style.display = 'none';
-            document.getElementById('damageDescription').value = ''; 
-        }
-    }
+const file=e.target.files[0];
+if(!file) return;
 
-    window.onload = async function() {
-        const vanSelect = document.getElementById('vanReg');
-        try {
-            const response = await fetch(getVansURL);
-            if (!response.ok) throw new Error("Flow failed to respond");
-            const vans = await response.json();
-            vanSelect.innerHTML = '<option value="">-- Select a Van --</option>';
-            vans.forEach(van => {
-                let vanText = typeof van === 'object' ? Object.values(van)[0] : van;
-                if(vanText) {
-                    let opt = document.createElement('option');
-                    opt.value = vanText; opt.innerHTML = vanText;
-                    vanSelect.appendChild(opt);
-                }
-            });
-        } catch (error) {
-            vanSelect.innerHTML = '<option value="">Error loading list.</option>';
-            const input = document.createElement('input');
-            input.type = 'text'; input.id = 'vanReg'; input.required = true;
-            vanSelect.parentNode.replaceChild(input, vanSelect);
-        }
-    };
+const base64=await getBase64(file);
 
-    document.getElementById('inspectionForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const btn = document.getElementById('submitBtn');
-        const status = document.getElementById('status');
-        btn.disabled = true; btn.innerText = "Uploading..."; status.innerText = "";
+customPhotosArray.push({
+photoName:file.name,
+photoBase64:base64
+});
 
-        const payload = {
-            vanReg: document.getElementById('vanReg').value,
-            driverName: document.getElementById('driverName').value,
-            mileage: document.getElementById('mileage').value,
-            damageReported: document.getElementById('damageReported').value,
-            damageDescription: document.getElementById('damageDescription').value,
-            photos: customPhotosArray // Now correctly sending the custom built array
-        };
+const preview=document.getElementById("photoPreviewList");
 
-        try {
-            const response = await fetch(submitReportURL, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
-            });
-            if (response.ok) {
-                status.style.color = "#10b981"; status.innerText = "✅ Report submitted!";
-                document.getElementById('inspectionForm').reset();
-                document.getElementById('descGroup').style.display = 'none'; 
-                
-                // Clear out the photos and thumbnails after successful submit
-                customPhotosArray = [];
-                document.getElementById('photoPreviewList').innerHTML = '';
-            } else throw new Error("Failed");
-        } catch (error) {
-            status.style.color = "#ef4444"; status.innerText = "❌ Error sending report.";
-        } finally {
-            btn.disabled = false; btn.innerText = "Submit Report";
-        }
-    });
+const img=document.createElement("img");
+img.src="data:image/jpeg;base64,"+base64;
+img.className="thumbnail";
+
+preview.appendChild(img);
+
+e.target.value='';
+}
+
+function toggleDamageBox(val){
+
+const descGroup=document.getElementById("descGroup");
+
+if(val==="Yes"){
+descGroup.style.display="block";
+}else{
+descGroup.style.display="none";
+document.getElementById("damageDescription").value="";
+}
+
+}
+
+window.onload=async function(){
+
+const vanSelect=document.getElementById("vanReg");
+
+try{
+
+const response=await fetch(getVansURL);
+
+if(!response.ok) throw new Error();
+
+const vans=await response.json();
+
+vanSelect.innerHTML='<option value="">-- Select a Van --</option>';
+
+vans.forEach(van=>{
+
+let vanText=typeof van==="object"?Object.values(van)[0]:van;
+
+if(vanText){
+
+let opt=document.createElement("option");
+
+opt.value=vanText;
+opt.innerHTML=vanText;
+
+vanSelect.appendChild(opt);
+
+}
+
+});
+
+}catch{
+
+vanSelect.innerHTML='<option value="">Error loading list.</option>';
+
+}
+
+};
+
+document.getElementById("inspectionForm").addEventListener("submit",async function(e){
+
+e.preventDefault();
+
+const btn=document.getElementById("submitBtn");
+const status=document.getElementById("status");
+
+btn.disabled=true;
+btn.innerText="Uploading...";
+status.innerText="";
+
+const payload={
+
+vanReg:document.getElementById("vanReg").value,
+driverName:document.getElementById("driverName").value,
+mileage:document.getElementById("mileage").value,
+damageReported:document.getElementById("damageReported").value,
+damageDescription:document.getElementById("damageDescription").value,
+photos:customPhotosArray
+
+};
+
+try{
+
+const response=await fetch(submitReportURL,{
+method:"POST",
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify(payload)
+});
+
+if(response.ok){
+
+status.style.color="#10b981";
+status.innerText="✅ Report submitted!";
+
+document.getElementById("inspectionForm").reset();
+
+document.getElementById("descGroup").style.display="none";
+
+customPhotosArray=[];
+document.getElementById("photoPreviewList").innerHTML="";
+
+}else{
+
+throw new Error();
+
+}
+
+}catch{
+
+status.style.color="#ef4444";
+status.innerText="❌ Error sending report.";
+
+}
+
+btn.disabled=false;
+btn.innerText="Submit Report";
+
+});
+
 </script>
+
 </body>
 </html>
-
+```
