@@ -14,15 +14,19 @@
         input, select, textarea { width: 100%; padding: 14px; border: 1.5px solid #e5e7eb; border-radius: 10px; box-sizing: border-box; font-size: 16px; background-color: #f9fafb; font-family: inherit; }
         input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); background-color: white; }
         .btn { width: 100%; background-color: var(--primary); color: white; padding: 16px; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; }
+        .btn-secondary { background-color: #6b7280; margin-bottom: 10px; } /* Added secondary button style */
         .btn:disabled { background-color: #9ca3af; cursor: not-allowed; }
         #status { text-align: center; margin-top: 20px; font-weight: 600; font-size: 15px; }
         #descGroup { display: none; } 
+        /* Added Thumbnail Styles */
+        #photoPreviewList { display: flex; flex-wrap: wrap; gap: 10px; }
+        .thumbnail { width: 65px; height: 65px; object-fit: cover; border-radius: 8px; border: 2px solid #e5e7eb; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>Daily Van Check</h2>
+    <h2>Van Inspection/Reporting</h2>
     <form id="inspectionForm">
         
         <div class="input-group">
@@ -41,9 +45,9 @@
         </div>
 
         <div class="input-group">
-            <label for="damageReported">Any new damage?</label>
+            <label for="damageReported">Vehicle Damages</label>
             <select id="damageReported" required onchange="toggleDamageBox(this.value)">
-                <option value="No">No - Van is fine</option>
+                <option value="No">No - Vehicle is fine</option>
                 <option value="Yes">Yes - Reporting damage</option>
             </select>
         </div>
@@ -54,8 +58,13 @@
         </div>
 
         <div class="input-group" id="photoGroup">
-            <label for="photo">Upload Photos (Select multiple if needed)</label>
-            <input type="file" id="photo" accept="image/*" multiple>
+            <label>Upload/Take Photos (If damaged)</label>
+            
+            <input type="file" id="photoInput" accept="image/*" style="display: none;">
+            
+            <button type="button" class="btn btn-secondary" onclick="document.getElementById('photoInput').click()">📸 Take/Add Photo</button>
+            
+            <div id="photoPreviewList"></div>
         </div>
 
         <button type="submit" class="btn" id="submitBtn">Submit Report</button>
@@ -69,6 +78,41 @@
     
     // 2. CATCHER URL
     const submitReportURL = "https://default267b2c46e98b42ef93ce19c08b7664.4d.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/9e3e85b60f3947da92c42d990ddc422d/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=4gSI0fxRNHaLKvsmfqx8kwBUUOMN5GPkStVnZGmhpGw"; 
+
+    // Global array to hold the camera/gallery shots
+    let customPhotosArray = [];
+
+    // Base64 Converter moved outside the submit function
+    const getBase64 = (file) => new Promise((resolve, reject) => {
+        const reader = new FileReader(); reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result.split(',')[1]); 
+        reader.onerror = error => reject(error);
+    });
+
+    // Handle the new photo button clicks
+    document.getElementById('photoInput').addEventListener('change', async function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Convert the photo immediately
+        const base64 = await getBase64(file);
+        
+        // Add to our payload array
+        customPhotosArray.push({
+            photoName: file.name,
+            photoBase64: base64
+        });
+
+        // Show a little thumbnail preview
+        const previewDiv = document.getElementById('photoPreviewList');
+        const img = document.createElement('img');
+        img.src = "data:image/jpeg;base64," + base64;
+        img.className = "thumbnail";
+        previewDiv.appendChild(img);
+
+        // Reset the input so they can click it again for the next photo!
+        this.value = '';
+    });
 
     function toggleDamageBox(selectedValue) {
         const descGroup = document.getElementById('descGroup');
@@ -109,32 +153,13 @@
         const status = document.getElementById('status');
         btn.disabled = true; btn.innerText = "Uploading..."; status.innerText = "";
 
-        const fileInput = document.getElementById('photo');
-        let photosArray = [];
-
-        // Function to convert file to base64
-        const getBase64 = (file) => new Promise((resolve, reject) => {
-            const reader = new FileReader(); reader.readAsDataURL(file);
-            reader.onload = () => resolve(reader.result.split(',')[1]); 
-            reader.onerror = error => reject(error);
-        });
-
-        // Loop through all selected files and package them
-        for (let i = 0; i < fileInput.files.length; i++) {
-            let base64 = await getBase64(fileInput.files[i]);
-            photosArray.push({
-                photoName: fileInput.files[i].name,
-                photoBase64: base64
-            });
-        }
-
         const payload = {
             vanReg: document.getElementById('vanReg').value,
             driverName: document.getElementById('driverName').value,
             mileage: document.getElementById('mileage').value,
             damageReported: document.getElementById('damageReported').value,
             damageDescription: document.getElementById('damageDescription').value,
-            photos: photosArray // Send the whole array of photos!
+            photos: customPhotosArray // Now correctly sending the custom built array
         };
 
         try {
@@ -145,6 +170,10 @@
                 status.style.color = "#10b981"; status.innerText = "✅ Report submitted!";
                 document.getElementById('inspectionForm').reset();
                 document.getElementById('descGroup').style.display = 'none'; 
+                
+                // Clear out the photos and thumbnails after successful submit
+                customPhotosArray = [];
+                document.getElementById('photoPreviewList').innerHTML = '';
             } else throw new Error("Failed");
         } catch (error) {
             status.style.color = "#ef4444"; status.innerText = "❌ Error sending report.";
